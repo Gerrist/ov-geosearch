@@ -2,6 +2,7 @@ package vehiclestore
 
 import (
 	"ov-geosearch/models"
+	"sync"
 )
 
 type Vehicles = map[string]models.Vehicle
@@ -13,7 +14,10 @@ func Get(operator string, id string) models.Vehicle {
 }
 
 func Set(operator string, id string, vehicle models.Vehicle) {
+	var mutex = &sync.Mutex{}
+	mutex.Lock()
 	VehicleStore[operator+":"+id] = vehicle
+	mutex.Unlock()
 }
 
 func Count() int {

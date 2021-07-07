@@ -24,6 +24,7 @@ func Serve(port string) {
 	r.HandleFunc("/api/status", getStatus).Methods("GET")
 	r.HandleFunc("/api/vehicles", getVehicles).Methods("GET")
 	r.HandleFunc("/api/vehicle/{operator}/{id}", getVehicle).Methods("GET")
+	r.HandleFunc("/api/vehicle-options", getVehicleOptions).Methods("GET")
 	r.HandleFunc("/api/transferable", getTransferable).Methods("GET")
 
 	log.Fatalln(http.ListenAndServe(port, r))
@@ -85,6 +86,73 @@ func getTransferable(res http.ResponseWriter, req *http.Request) {
 	date := req.URL.Query().Get("date")
 
 	if lat == "" || lon == "" || realtimeTripId == "" || date == "" {
+		json.NewEncoder(res).Encode(Map{
+			"success": false,
+			"error":   "Missing required (lat, lon, realtime_trip_id, date) parameters",
+		})
+	} else {
+		//tripUrl := "http://maglev1.travelguide.moopmobility.nl/v1/trips/" + date + "/" + realtimeTripId
+		//
+		//resp, err := http.Get(tripUrl)
+		//if err != nil {
+		//	log.Fatalln(err)
+		//}
+		//body, err := ioutil.ReadAll(resp.Body)
+		//sb := string(body)
+		//
+		//errorMessage := gjson.Get(sb, "errorMessage").String()
+		//
+		//if errorMessage == "" { // trip found
+		//	tripData := gjson.Get(sb, "tripData")
+		//	stops := gjson.Get(sb, "stops")
+		//
+		//	log.Println(tripData)
+		//} else {
+		//	json.NewEncoder(res).Encode(Map{
+		//		"success": false,
+		//		"error":   errorMessage,
+		//	})
+		//}
+
+		nearbyVehicles := make([]models.Vehicle, 0)
+
+		latFloat, _ := strconv.ParseFloat(lat, 64)
+		lonFloat, _ := strconv.ParseFloat(lon, 64)
+		speedFloat, _ := strconv.ParseFloat(speed, 64)
+
+		for _, vehicle := range vehiclestore.All() {
+			if util.Distance(latFloat, lonFloat, vehicle.Lat, vehicle.Lon) < util.GetSearchRange(speedFloat) {
+				nearbyVehicles = append(nearbyVehicles, vehicle)
+			}
+		}
+
+		json.NewEncoder(res).Encode(Map{
+			"success":      true,
+			"transferable": nearbyVehicles,
+		})
+
+		//json.NewEncoder(res).Encode(Map{
+		//	"success": false,
+		//	"tripUrl": tripUrl,
+		//})
+
+		//json.NewDecoder(re.Body).Decode(Map{tripUrl: tripUrl})
+	}
+
+}
+
+
+func getVehicleOptions(res http.ResponseWriter, req *http.Request) {
+	res.Header().Set("Content-Type", "application/json")
+
+	lat := req.URL.Query().Get("lat")
+	lon := req.URL.Query().Get("lon")
+	speed := req.URL.Query().Get("speed")
+	//realtimeTripId := req.URL.Query().Get("realtime_trip_id")
+	//date := req.URL.Query().Get("date")
+
+	//if lat == "" || lon == "" || realtimeTripId == "" || date == "" {
+	if lat == "" || lon == "" {
 		json.NewEncoder(res).Encode(Map{
 			"success": false,
 			"error":   "Missing required (lat, lon, realtime_trip_id, date) parameters",
