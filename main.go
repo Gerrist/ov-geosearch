@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	Router "ov-geosearch/api"
 	qh "ov-geosearch/queuehandler"
 )
@@ -14,5 +15,11 @@ func main() {
 	fmt.Println("Starting queue handler")
 	go qh.QueueHandler()
 	fmt.Println("Serving REST API...")
-	Router.Serve(":8080")
+
+	port := os.Getenv("PORT")
+	if(port == ""){
+		port = "8080"
+	}
+
+	Router.Serve(":" + port)
 }
